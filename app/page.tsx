@@ -59,17 +59,13 @@ const PRODUCTS = [
 ];
 
 export default function NexaPeptidesPage() {
-  //
-  // AGE VERIFICATION STATE
-  //
-  const [isVerified, setIsVerified] = useState<boolean>(false); // default to false so popup shows first visit
+  // AGE VERIFICATION
+  const [isVerified, setIsVerified] = useState<boolean>(false);
   const [birthYear, setBirthYear] = useState("");
 
   useEffect(() => {
     const verified = localStorage.getItem("ageVerified");
-    if (verified === "true") {
-      setIsVerified(true);
-    }
+    if (verified === "true") setIsVerified(true);
   }, []);
 
   const handleSubmitAgeGate = () => {
@@ -78,21 +74,15 @@ export default function NexaPeptidesPage() {
     if (age >= 21) {
       localStorage.setItem("ageVerified", "true");
       setIsVerified(true);
-    } else {
-      alert("You must be 21 or older to enter this website.");
-    }
+    } else alert("You must be 21 or older to enter this website.");
   };
 
-  //
   // CART + DISCOUNT STATE
-  //
   const [cart, setCart] = useState<{ sku: string; qty: number }[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
-
-  // NEW: Discount code in checkout
   const [discountCode, setDiscountCode] = useState("");
 
-  // Subtotal before any discount
+  // subtotal before discount
   const subtotal = useMemo(
     () =>
       cart.reduce((sum, item) => {
@@ -102,15 +92,17 @@ export default function NexaPeptidesPage() {
     [cart]
   );
 
-  // Does the user get a discount? Rule: if they entered ANY code, apply 10%
+  // APPROVED DISCOUNT CODES ONLY
+  const APPROVED_CODES = ["KENNY10", "JAY10", "SARAH10", "COACHK", "NEXA10"];
+
   const discountAmount = useMemo(() => {
     if (!discountCode.trim()) return 0;
-    return subtotal * 0.1;
+    const normalized = discountCode.trim().toUpperCase();
+    const isApproved = APPROVED_CODES.includes(normalized);
+    return isApproved ? subtotal * 0.1 : 0;
   }, [subtotal, discountCode]);
 
-  const finalTotal = useMemo(() => {
-    return subtotal - discountAmount;
-  }, [subtotal, discountAmount]);
+  const finalTotal = useMemo(() => subtotal - discountAmount, [subtotal, discountAmount]);
 
   const addToCart = (sku: string) =>
     setCart((prev) => {
@@ -126,27 +118,20 @@ export default function NexaPeptidesPage() {
   const removeFromCart = (sku: string) =>
     setCart((prev) => prev.filter((x) => x.sku !== sku));
 
-  //
-  // CHECKOUT EMAIL BUILDER
-  //
+  // CHECKOUT EMAIL
   const handleCheckout = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const form = e.currentTarget as HTMLFormElement & {
-      [index: number]: HTMLInputElement;
-    };
+    const form = e.currentTarget as HTMLFormElement & { [index: number]: HTMLInputElement };
     const name = form[0].value;
     const email = form[1].value;
     const phone = form[2].value;
     const address = form[3].value;
 
     const subject = `New Order — ${name}`;
-
     const lineItems = cart
       .map((l) => {
         const p = PRODUCTS.find((x) => x.sku === l.sku)!;
-        return `${l.qty}× ${p.name} (${p.sku}) — $${(
-          p.price * l.qty
-        ).toFixed(2)}`;
+        return `${l.qty}× ${p.name} (${p.sku}) — $${(p.price * l.qty).toFixed(2)}`;
       })
       .join("%0D%0A");
 
@@ -168,78 +153,35 @@ Total After Discount: $${finalTotal.toFixed(2)}
 Note: Research use only — not for human or veterinary use.
     `.replace(/\n/g, "%0D%0A");
 
-    alert(
-      "Opening Gmail… If nothing happens, check popup settings or set Gmail as default email."
-    );
-
-    window.location.href = `mailto:${BRAND.email}?subject=${encodeURIComponent(
-      subject
-    )}&body=${body}`;
-
-    // Clear cart after
+    alert("Opening Gmail… If nothing happens, check popup settings or set Gmail as default email.");
+    window.location.href = `mailto:${BRAND.email}?subject=${encodeURIComponent(subject)}&body=${body}`;
     setCart([]);
     setCartOpen(false);
   };
 
-  //
-  // AGE GATE MODAL (centered card on dark background)
-  //
+  // AGE GATE POPUP
   if (!isVerified) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-8">
         <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl p-6 text-neutral-900 border border-neutral-200">
-          <h1 className="text-xl font-bold text-center">
-            Age Verification Required
-          </h1>
-
+          <h1 className="text-xl font-bold text-center">Age Verification Required</h1>
           <p className="text-xs text-neutral-600 leading-relaxed mt-4 max-h-40 overflow-y-auto border border-neutral-200 rounded-lg p-3 bg-neutral-50">
-            All products offered by NexaPeptides are intended exclusively for
-            laboratory research and in vitro use. They are not approved for
-            human or animal consumption, medical, diagnostic, therapeutic, or
-            cosmetic applications. These compounds have not been evaluated by
-            the U.S. Food and Drug Administration (FDA) for safety or efficacy
-            in any context. NexaPeptides is not a compounding pharmacy; it is a
-            chemical supplier. NexaPeptides is not a chemical compounding
-            facility as defined under Section 503a of the Federal Food, Drug,
-            and Cosmetic Act, nor is it an outsourcing facility as defined under
-            Section 503b of the same Act. Any misuse, unauthorized distribution,
-            or deviation from these terms may violate federal or state laws and
-            is strictly prohibited. By proceeding, you agree to indemnify and
-            hold NexaPeptides harmless from any claims, liabilities, or damages
-            arising from the improper use of our products.
+            All products offered by NexaPeptides are intended exclusively for laboratory research and in vitro use...
           </p>
-
           <div className="mt-6 flex flex-col items-center">
-            <label className="text-sm text-neutral-700 mb-2 font-medium">
-              Enter your birth year to continue
-            </label>
-            <input
-              type="number"
-              value={birthYear}
-              onChange={(e) => setBirthYear(e.target.value)}
-              placeholder="e.g. 2003"
-              className="px-3 py-2 rounded-xl border border-neutral-300 text-center w-32 text-neutral-900"
-            />
-            <button
-              onClick={handleSubmitAgeGate}
-              className="mt-4 w-full rounded-xl bg-neutral-900 text-white text-sm font-semibold py-2 hover:opacity-90 transition"
-            >
+            <label className="text-sm text-neutral-700 mb-2 font-medium">Enter your birth year to continue</label>
+            <input type="number" value={birthYear} onChange={(e) => setBirthYear(e.target.value)} placeholder="e.g. 2003" className="px-3 py-2 rounded-xl border border-neutral-300 text-center w-32 text-neutral-900" />
+            <button onClick={handleSubmitAgeGate} className="mt-4 w-full rounded-xl bg-neutral-900 text-white text-sm font-semibold py-2 hover:opacity-90 transition">
               Enter Site
             </button>
           </div>
-
-          <p className="text-[10px] text-neutral-500 text-center mt-4 leading-snug">
-            By continuing you confirm you are 21+ and acknowledge the terms
-            above. If you are under 21, exit this site.
-          </p>
+          <p className="text-[10px] text-neutral-500 text-center mt-4 leading-snug">By continuing you confirm you are 21+.</p>
         </div>
       </div>
     );
   }
 
-  //
-  // MAIN SITE CONTENT
-  //
+  // MAIN SITE
   return (
     <div className="min-h-screen bg-white text-neutral-900">
       {/* HEADER */}
@@ -249,21 +191,10 @@ Note: Research use only — not for human or veterinary use.
             <img src={LOGO_SRC} alt="logo" className="h-8 w-8" />
             <span className="font-extrabold text-xl">Nexa Peptides</span>
           </div>
-
           <div className="flex items-center gap-3">
-            <a
-              href="/ambassadors"
-              className="text-xs font-semibold border border-neutral-900 rounded-full px-3 py-1 hover:bg-neutral-900 hover:text-white"
-            >
-              Ambassadors
-            </a>
-
-            <button
-              onClick={() => setCartOpen(true)}
-              className="border border-neutral-900 rounded-full px-4 py-1 text-sm hover:bg-neutral-900 hover:text-white"
-            >
-              <ShoppingCart className="inline h-4 w-4 mr-1" />
-              Cart ({cart.reduce((s, l) => s + l.qty, 0)})
+            <a href="/ambassadors" className="text-xs font-semibold border border-neutral-900 rounded-full px-3 py-1 hover:bg-neutral-900 hover:text-white">Ambassadors</a>
+            <button onClick={() => setCartOpen(true)} className="border border-neutral-900 rounded-full px-4 py-1 text-sm hover:bg-neutral-900 hover:text-white">
+              <ShoppingCart className="inline h-4 w-4 mr-1" />Cart ({cart.reduce((s, l) => s + l.qty, 0)})
             </button>
           </div>
         </div>
@@ -271,18 +202,11 @@ Note: Research use only — not for human or veterinary use.
 
       {/* PRODUCTS */}
       <section id="products" className="py-16 max-w-7xl mx-auto px-4">
-        <h2 className="text-3xl font-extrabold mb-6 text-center">
-          Research Materials
-        </h2>
+        <h2 className="text-3xl font-extrabold mb-6 text-center">Research Materials</h2>
         <div className="grid md:grid-cols-3 lg:grid-cols-4 gap-6">
           {PRODUCTS.map((p) => (
-            <div
-              key={p.sku}
-              className="border border-neutral-200 rounded-2xl p-4 shadow-sm hover:shadow-md"
-            >
-              <div className="aspect-square bg-neutral-100 border border-neutral-200 rounded-xl flex items-center justify-center text-neutral-400 text-sm">
-                Add product photo
-              </div>
+            <div key={p.sku} className="border border-neutral-200 rounded-2xl p-4 shadow-sm hover:shadow-md">
+              <div className="aspect-square bg-neutral-100 border border-neutral-200 rounded-xl flex items-center justify-center text-neutral-400 text-sm">Add product photo</div>
               <div className="mt-4 flex justify-between">
                 <div>
                   <div className="text-xs text-neutral-500">{p.category}</div>
@@ -291,12 +215,7 @@ Note: Research use only — not for human or veterinary use.
                 <div className="text-xl font-bold">${p.price}</div>
               </div>
               <p className="mt-2 text-sm text-neutral-700">{p.desc}</p>
-              <button
-                onClick={() => addToCart(p.sku)}
-                className="mt-3 w-full border border-neutral-900 rounded-xl py-2 text-sm font-semibold hover:bg-neutral-900 hover:text-white"
-              >
-                Add to Cart
-              </button>
+              <button onClick={() => addToCart(p.sku)} className="mt-3 w-full border border-neutral-900 rounded-xl py-2 text-sm font-semibold hover:bg-neutral-900 hover:text-white">Add to Cart</button>
             </div>
           ))}
         </div>
@@ -305,145 +224,13 @@ Note: Research use only — not for human or veterinary use.
       {/* CART MODAL */}
       <AnimatePresence>
         {cartOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-          >
-            <motion.div
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.9 }}
-              className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-lg relative"
-            >
-              <button
-                onClick={() => setCartOpen(false)}
-                className="absolute right-4 top-4 text-neutral-500 hover:text-black"
-              >
-                <X className="h-5 w-5" />
-              </button>
-
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-lg relative">
+              <button onClick={() => setCartOpen(false)} className="absolute right-4 top-4 text-neutral-500 hover:text-black"><X className="h-5 w-5" /></button>
               <h3 className="text-2xl font-bold mb-4">Your Cart</h3>
 
               {cart.length === 0 ? (
                 <p className="text-neutral-600">Your cart is empty.</p>
               ) : (
                 <>
-                  <ul className="space-y-2 mb-4 max-h-40 overflow-y-auto pr-2">
-                    {cart.map((item) => {
-                      const p = PRODUCTS.find((x) => x.sku === item.sku)!;
-                      return (
-                        <li
-                          key={item.sku}
-                          className="flex justify-between items-center border-b pb-2"
-                        >
-                          <span>
-                            {item.qty}× {p.name}
-                          </span>
-                          <button
-                            onClick={() => removeFromCart(item.sku)}
-                            className="text-xs text-red-500 hover:underline"
-                          >
-                            Remove
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-
-                  {/* price summary with discount */}
-                  <div className="text-right text-sm mb-4 space-y-1">
-                    <div className="flex justify-between font-medium">
-                      <span>Subtotal:</span>
-                      <span>${subtotal.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between text-green-600 font-medium">
-                      <span>
-                        Discount {discountCode ? `(10% - ${discountCode})` : "(none)"}
-                      </span>
-                      <span>- ${discountAmount.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between font-bold text-lg">
-                      <span>Total:</span>
-                      <span>${finalTotal.toFixed(2)}</span>
-                    </div>
-                  </div>
-
-                  <form
-                    className="grid gap-3 text-sm text-left"
-                    onSubmit={handleCheckout}
-                  >
-                    <input
-                      className="border border-neutral-300 rounded-xl px-3 py-2"
-                      placeholder="Full Name"
-                      required
-                    />
-                    <input
-                      className="border border-neutral-300 rounded-xl px-3 py-2"
-                      placeholder="Email"
-                      required
-                    />
-                    <input
-                      className="border border-neutral-300 rounded-xl px-3 py-2"
-                      placeholder="Phone"
-                      required
-                    />
-                    <input
-                      className="border border-neutral-300 rounded-xl px-3 py-2"
-                      placeholder="Address"
-                      required
-                    />
-
-                    {/* NEW: Ambassador / referral code input */}
-                    <input
-                      className="border border-neutral-300 rounded-xl px-3 py-2 uppercase"
-                      placeholder="Referral / Discount Code (optional)"
-                      value={discountCode}
-                      onChange={(e) => setDiscountCode(e.target.value)}
-                    />
-
-                    <button
-                      type="submit"
-                      className="bg-neutral-900 text-white rounded-xl py-2 font-semibold hover:opacity-90"
-                    >
-                      Submit Order (Email Invoice)
-                    </button>
-                  </form>
-                </>
-              )}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* FOOTER */}
-      <footer className="bg-neutral-950 text-neutral-300 mt-20">
-        <div className="max-w-7xl mx-auto px-4 py-12 grid md:grid-cols-3 gap-8">
-          <div>
-            <div className="font-extrabold text-lg text-neutral-100">
-              Nexa Peptides
-            </div>
-            <p className="mt-3 text-sm text-neutral-400">{BRAND.tagline}</p>
-          </div>
-          <div>
-            <div className="font-semibold text-neutral-200">Contact</div>
-            <ul className="mt-3 space-y-2 text-sm">
-              <li className="flex items-center gap-2">
-                <Mail className="h-4 w-4" /> {BRAND.email}
-              </li>
-              <li className="flex items-center gap-2">
-                <Phone className="h-4 w-4" /> {BRAND.phone}
-              </li>
-              <li>{BRAND.location}</li>
-            </ul>
-          </div>
-          <div className="text-sm text-neutral-400">
-            © {new Date().getFullYear()} Nexa Peptides — For laboratory
-            research only.
-          </div>
-        </div>
-      </footer>
-    </div>
-  );
-}
+                  <ul className="space-y-2 mb-
