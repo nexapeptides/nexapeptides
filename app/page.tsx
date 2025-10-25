@@ -59,14 +59,17 @@ const PRODUCTS = [
 ];
 
 export default function NexaPeptidesPage() {
-  // AGE VERIFICATION
+  // AGE VERIFICATION STATE
   const [isVerified, setIsVerified] = useState<boolean | null>(null);
   const [birthYear, setBirthYear] = useState("");
 
   useEffect(() => {
     const verified = localStorage.getItem("ageVerified");
-    if (verified === "true") setIsVerified(true);
-    else setIsVerified(false);
+    if (verified === "true") {
+      setIsVerified(true);
+    } else {
+      setIsVerified(false);
+    }
   }, []);
 
   const handleSubmit = () => {
@@ -80,7 +83,7 @@ export default function NexaPeptidesPage() {
     }
   };
 
-  // CART SYSTEM
+  // CART STATE
   const [cart, setCart] = useState<{ sku: string; qty: number }[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
 
@@ -139,55 +142,68 @@ export default function NexaPeptidesPage() {
     setCartOpen(false);
   };
 
-  // ---------------------------
-  // AGE DISCLAIMER POPUP
-  // ---------------------------
+  // ------------------------------------------------------------------
+  // AGE GATE UI (centered modal instead of full screen)
+  // ------------------------------------------------------------------
   if (isVerified === false) {
     return (
-      <div className="fixed inset-0 flex flex-col items-center justify-center bg-black/90 text-white z-50 p-6 text-center">
-        <h1 className="text-2xl font-bold mb-4">Age Verification Required</h1>
-        <p className="max-w-2xl mb-6 text-sm leading-relaxed text-gray-300">
-          All products offered by NexaPeptides are intended exclusively for
-          laboratory research and in vitro use. They are not approved for human
-          or animal consumption, medical, diagnostic, therapeutic, or cosmetic
-          applications. These compounds have not been evaluated by the U.S. Food
-          and Drug Administration (FDA) for safety or efficacy in any context.
-          NexaPeptides is not a compounding pharmacy; it is a chemical supplier.
-          NexaPeptides is not a chemical compounding facility as defined under
-          Section 503a of the Federal Food, Drug, and Cosmetic Act, nor is it an
-          outsourcing facility as defined under Section 503b of the same Act.
-          Any misuse, unauthorized distribution, or deviation from these terms
-          may violate federal or state laws and is strictly prohibited. By
-          proceeding, you agree to indemnify and hold NexaPeptides harmless from
-          any claims, liabilities, or damages arising from the improper use of
-          our products.
-        </p>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-8">
+        <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl p-6 text-neutral-900">
+          <h1 className="text-xl font-bold text-center">
+            Age Verification Required
+          </h1>
 
-        <label className="mb-2 text-sm text-gray-300">
-          Enter your birth year:
-        </label>
-        <input
-          type="number"
-          value={birthYear}
-          onChange={(e) => setBirthYear(e.target.value)}
-          placeholder="e.g. 2003"
-          className="mb-4 px-3 py-2 rounded text-black text-center w-32"
-        />
-        <button
-          onClick={handleSubmit}
-          className="px-6 py-2 bg-white text-black rounded-md font-semibold hover:bg-gray-200 transition"
-        >
-          Enter Site
-        </button>
+          <p className="text-xs text-neutral-600 leading-relaxed mt-4 max-h-40 overflow-y-auto border border-neutral-200 rounded-lg p-3 bg-neutral-50">
+            All products offered by NexaPeptides are intended exclusively for
+            laboratory research and in vitro use. They are not approved for
+            human or animal consumption, medical, diagnostic, therapeutic, or
+            cosmetic applications. These compounds have not been evaluated by
+            the U.S. Food and Drug Administration (FDA) for safety or efficacy
+            in any context. NexaPeptides is not a compounding pharmacy; it is a
+            chemical supplier. NexaPeptides is not a chemical compounding
+            facility as defined under Section 503a of the Federal Food, Drug,
+            and Cosmetic Act, nor is it an outsourcing facility as defined under
+            Section 503b of the same Act. Any misuse, unauthorized distribution,
+            or deviation from these terms may violate federal or state laws and
+            is strictly prohibited. By proceeding, you agree to indemnify and
+            hold NexaPeptides harmless from any claims, liabilities, or damages
+            arising from the improper use of our products.
+          </p>
+
+          <div className="mt-6 flex flex-col items-center">
+            <label className="text-sm text-neutral-700 mb-2 font-medium">
+              Enter your birth year to continue
+            </label>
+            <input
+              type="number"
+              value={birthYear}
+              onChange={(e) => setBirthYear(e.target.value)}
+              placeholder="e.g. 2003"
+              className="px-3 py-2 rounded-xl border border-neutral-300 text-center w-32 text-neutral-900"
+            />
+            <button
+              onClick={handleSubmit}
+              className="mt-4 w-full rounded-xl bg-neutral-900 text-white text-sm font-semibold py-2 hover:opacity-90 transition"
+            >
+              Enter Site
+            </button>
+          </div>
+
+          <p className="text-[10px] text-neutral-500 text-center mt-4 leading-snug">
+            By continuing you confirm you are 21+ and acknowledge the terms
+            above. If you are under 21, exit this site.
+          </p>
+        </div>
       </div>
     );
   }
 
+  // while we haven't read localStorage yet, don't flash the site
   if (!isVerified) return null;
 
-  // ---------------------------
-  // MAIN SITE CONTENT
-  // ---------------------------
+  // ------------------------------------------------------------------
+  // ACTUAL SITE CONTENT
+  // ------------------------------------------------------------------
   return (
     <div className="min-h-screen bg-white text-neutral-900">
       {/* HEADER */}
