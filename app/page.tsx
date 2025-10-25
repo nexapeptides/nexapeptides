@@ -15,32 +15,50 @@ const BRAND = {
   location: "Bradenton • Sarasota • Florida",
 };
 
-// Registered ambassador codes
-const REFERRAL_CODES: Record<string, string> = {
-  KENNY10: "Kenneth Lopez",
-  TEST10: "Demo Ambassador",
-};
+// ✅ pull ambassador codes dynamically from localStorage so admin panel works
+function useReferralCodes() {
+  const [codes, setCodes] = useState<Record<string, string>>({
+    KENNY10: "Kenneth Lopez",
+    TEST10: "Demo Ambassador",
+  });
+
+  useState(() => {
+    try {
+      const stored = localStorage.getItem("approvedAmbassadorCodes");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          const obj: Record<string, string> = {};
+          parsed.forEach((c) => (obj[c] = "Approved Ambassador"));
+          setCodes((prev) => ({ ...prev, ...obj }));
+        }
+      }
+    } catch (err) {
+      console.error("Could not load local ambassador codes", err);
+    }
+  });
+
+  return codes;
+}
 
 const PRODUCTS = [
   { sku: "SEMAG-5MG", name: "Semaglutide 5mg", price: 60, desc: "GLP-1 agonist for appetite suppression and long-term weight management.", category: "Weight Loss" },
-  { sku: "RETA-10MG", name: "Retatrutide 10mg", price: 100, desc: "Multi-pathway compound for weight loss and glycemic support.", category: "Weight Loss" },
-  { sku: "BPC-5MG", name: "BPC-157 5mg", price: 40, desc: "Healing peptide supporting tendon, ligament, and soft-tissue recovery.", category: "Healing" },
-  { sku: "TB500-5MG", name: "TB-500 5mg", price: 45, desc: "Aids recovery and supports injury healing.", category: "Healing" },
-  { sku: "IGF-LR3-1MG", name: "IGF-1 LR3 1mg", price: 125, desc: "Growth factor studied for muscle growth and recovery.", category: "Muscle" },
-  { sku: "MK677-25MG-50CT", name: "MK-677 25mg (50 ct)", price: 75, desc: "GH secretagogue for recovery, sleep, and fullness.", category: "Muscle" },
-  { sku: "SEMAX-5MG", name: "Semax 5mg", price: 45, desc: "Nootropic peptide researched for focus and mood.", category: "Cognitive" },
-  { sku: "SELANK-5MG", name: "Selank 5mg", price: 45, desc: "Peptide for calm focus and stress reduction.", category: "Cognitive" },
+  { sku: "RETA-10MG", name: "Retatrutide 10mg", price: 100, desc: "Advanced multi-pathway compound for powerful weight loss.", category: "Weight Loss" },
+  { sku: "BPC-5MG", name: "BPC-157 5mg", price: 40, desc: "Healing peptide supporting tendon and ligament recovery.", category: "Healing" },
+  { sku: "IGF-LR3-1MG", name: "IGF-1 LR3 1mg", price: 125, desc: "Growth factor for muscle growth and recovery.", category: "Muscle" },
+  { sku: "SEMAX-5MG", name: "Semax 5mg", price: 45, desc: "Nootropic peptide researched for focus and cognition.", category: "Cognitive" },
   { sku: "PT141-10MG", name: "PT-141 10mg", price: 65, desc: "Peptide studied for libido enhancement.", category: "Libido" },
   { sku: "GHKCU-50MG", name: "GHK-Cu 50mg", price: 85, desc: "Copper peptide for skin, hair, and tissue regeneration.", category: "Anti-Aging" },
-  { sku: "CIALIS-20MG-50CT", name: "Cialis 20mg (50 ct)", price: 60, desc: "PDE5 inhibitor researched for blood-flow effects.", category: "Libido" },
   { sku: "BACW-30ML", name: "Bacteriostatic Water 30ml", price: 1, desc: "Sterile diluent for peptide reconstitution.", category: "Other" },
 ];
 
 export default function NexaPeptidesPage() {
+  const router = useRouter();
+  const REFERRAL_CODES = useReferralCodes();
+
   const [cart, setCart] = useState<{ sku: string; qty: number }[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [referral, setReferral] = useState("");
-  const router = useRouter();
 
   const total = useMemo(() => {
     const subtotal = cart.reduce((sum, item) => {
@@ -49,7 +67,7 @@ export default function NexaPeptidesPage() {
     }, 0);
     const discount = REFERRAL_CODES[referral.toUpperCase()] ? subtotal * 0.1 : 0;
     return subtotal - discount;
-  }, [cart, referral]);
+  }, [cart, referral, REFERRAL_CODES]);
 
   const addToCart = (sku: string) =>
     setCart((prev) => {
@@ -178,10 +196,7 @@ export default function NexaPeptidesPage() {
                     {cart.map((item) => {
                       const p = PRODUCTS.find((x) => x.sku === item.sku)!;
                       return (
-                        <li
-                          key={item.sku}
-                          className="flex justify-between items-center border-b pb-2"
-                        >
+                        <li key={item.sku} className="flex justify-between items-center border-b pb-2">
                           <span>{item.qty}× {p.name}</span>
                           <button
                             onClick={() => removeFromCart(item.sku)}
@@ -208,9 +223,7 @@ export default function NexaPeptidesPage() {
                     </p>
                   )}
 
-                  <div className="text-right font-bold mb-4">
-                    Total: ${total.toFixed(2)}
-                  </div>
+                  <div className="text-right font-bold mb-4">Total: ${total.toFixed(2)}</div>
 
                   <form className="grid gap-3 text-sm text-left" onSubmit={handleCheckout}>
                     <input className="border border-neutral-300 rounded-xl px-3 py-2" placeholder="Full Name" required />
@@ -236,7 +249,7 @@ export default function NexaPeptidesPage() {
         <div className="max-w-7xl mx-auto px-4 py-12 grid md:grid-cols-3 gap-8">
           <div>
             <div className="font-extrabold text-lg text-neutral-100">Nexa Peptides</div>
-            <p className="mt-3 text-sm text-neutral-400">Precision Research Compounds</p>
+            <p className="mt-3 text-sm text-neutral-400">{BRAND.tagline}</p>
           </div>
 
           <div>
