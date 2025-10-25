@@ -104,7 +104,7 @@ Approved codes will provide 10% off for customers and 10% commission to the amba
             name="code"
             type="text"
             required
-            placeholder="Preferred Discount Code (e.g. KENNY10)"
+            placeholder="Preferred Discount Code"
             className="w-full border border-neutral-700 bg-neutral-950 text-white rounded-xl px-3 py-2 uppercase placeholder-neutral-500"
           />
           <button
