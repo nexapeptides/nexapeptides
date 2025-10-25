@@ -281,34 +281,36 @@ export default function NexaPeptidesPage() {
       </AnimatePresence>
 
       {/* FOOTER */}
-      <footer className={/* FOOTER */}
-<footer className="bg-neutral-950 text-neutral-300 mt-20">
-  <div className="max-w-7xl mx-auto px-4 py-12 grid md:grid-cols-3 gap-8">
-    <div>
-      <div className="font-extrabold text-lg text-neutral-100">
-        Nexa Peptides
-      </div>
-      <p className="mt-3 text-sm text-neutral-400">
-        Precision Research Compounds
-      </p>
-    </div>
+      <footer className="bg-neutral-950 text-neutral-300 mt-20">
+        <div className="max-w-7xl mx-auto px-4 py-12 grid md:grid-cols-3 gap-8">
+          <div>
+            <div className="font-extrabold text-lg text-neutral-100">
+              Nexa Peptides
+            </div>
+            <p className="mt-3 text-sm text-neutral-400">
+              Precision Research Compounds
+            </p>
+          </div>
 
-    <div>
-      <div className="font-semibold text-neutral-200">Contact</div>
-      <ul className="mt-3 space-y-2 text-sm">
-        <li className="flex items-center gap-2">📧 nexapeptides@gmail.com</li>
-        <li className="flex items-center gap-2">📞 (941) 405-7808</li>
-        <li>Bradenton • Sarasota • Florida</li>
-      </ul>
-    </div>
+          <div>
+            <div className="font-semibold text-neutral-200">Contact</div>
+            <ul className="mt-3 space-y-2 text-sm">
+              <li className="flex items-center gap-2">📧 nexapeptides@gmail.com</li>
+              <li className="flex items-center gap-2">📞 (941) 405-7808</li>
+              <li>Bradenton • Sarasota • Florida</li>
+            </ul>
+          </div>
 
-    <div className="text-sm text-neutral-400">
-      © {new Date().getFullYear()} Nexa Peptides — For laboratory research only.
-      <div className="mt-2 space-x-3">
-        <a href="/terms" className="hover:underline">Terms</a>
-        <a href="/privacy" className="hover:underline">Privacy</a>
-        <a href="/disclaimer" className="hover:underline">Disclaimer</a>
-      </div>
+          <div className="text-sm text-neutral-400">
+            © {new Date().getFullYear()} Nexa Peptides — For laboratory research only.
+            <div className="mt-2 space-x-3">
+              <a href="/terms" className="hover:underline">Terms</a>
+              <a href="/privacy" className="hover:underline">Privacy</a>
+              <a href="/disclaimer" className="hover:underline">Disclaimer</a>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
-  </div>
-</footer>
+  );
+}
