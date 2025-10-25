@@ -59,20 +59,20 @@ const PRODUCTS = [
 ];
 
 export default function NexaPeptidesPage() {
+  //
   // AGE VERIFICATION STATE
-  const [isVerified, setIsVerified] = useState<boolean | null>(null);
+  //
+  const [isVerified, setIsVerified] = useState<boolean>(false); // default to false so popup shows first visit
   const [birthYear, setBirthYear] = useState("");
 
   useEffect(() => {
     const verified = localStorage.getItem("ageVerified");
     if (verified === "true") {
       setIsVerified(true);
-    } else {
-      setIsVerified(false);
     }
   }, []);
 
-  const handleSubmit = () => {
+  const handleSubmitAgeGate = () => {
     const currentYear = new Date().getFullYear();
     const age = currentYear - parseInt(birthYear);
     if (age >= 21) {
@@ -83,11 +83,17 @@ export default function NexaPeptidesPage() {
     }
   };
 
-  // CART STATE
+  //
+  // CART + DISCOUNT STATE
+  //
   const [cart, setCart] = useState<{ sku: string; qty: number }[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
 
-  const total = useMemo(
+  // NEW: Discount code in checkout
+  const [discountCode, setDiscountCode] = useState("");
+
+  // Subtotal before any discount
+  const subtotal = useMemo(
     () =>
       cart.reduce((sum, item) => {
         const p = PRODUCTS.find((x) => x.sku === item.sku);
@@ -95,6 +101,16 @@ export default function NexaPeptidesPage() {
       }, 0),
     [cart]
   );
+
+  // Does the user get a discount? Rule: if they entered ANY code, apply 10%
+  const discountAmount = useMemo(() => {
+    if (!discountCode.trim()) return 0;
+    return subtotal * 0.1;
+  }, [subtotal, discountCode]);
+
+  const finalTotal = useMemo(() => {
+    return subtotal - discountAmount;
+  }, [subtotal, discountAmount]);
 
   const addToCart = (sku: string) =>
     setCart((prev) => {
@@ -110,6 +126,9 @@ export default function NexaPeptidesPage() {
   const removeFromCart = (sku: string) =>
     setCart((prev) => prev.filter((x) => x.sku !== sku));
 
+  //
+  // CHECKOUT EMAIL BUILDER
+  //
   const handleCheckout = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget as HTMLFormElement & {
@@ -121,7 +140,8 @@ export default function NexaPeptidesPage() {
     const address = form[3].value;
 
     const subject = `New Order — ${name}`;
-    const lines = cart
+
+    const lineItems = cart
       .map((l) => {
         const p = PRODUCTS.find((x) => x.sku === l.sku)!;
         return `${l.qty}× ${p.name} (${p.sku}) — $${(
@@ -130,25 +150,44 @@ export default function NexaPeptidesPage() {
       })
       .join("%0D%0A");
 
-    const body = `Contact Info:%0D%0AName: ${name}%0D%0AEmail: ${email}%0D%0APhone: ${phone}%0D%0AAddress: ${address}%0D%0A%0D%0AItems:%0D%0A${lines}%0D%0A%0D%0ATotal: $${total.toFixed(
-      2
-    )}%0D%0A%0D%0ANote: Research use only — not for human or veterinary use.`;
+    const body = `
+Contact Info:
+Name: ${name}
+Email: ${email}
+Phone: ${phone}
+Address: ${address}
 
-    alert("Opening Gmail… If nothing happens, check your popup settings.");
+Items:
+${lineItems}
+
+Subtotal: $${subtotal.toFixed(2)}
+Discount Code Used: ${discountCode || "None"}
+Discount Amount: $${discountAmount.toFixed(2)}
+Total After Discount: $${finalTotal.toFixed(2)}
+
+Note: Research use only — not for human or veterinary use.
+    `.replace(/\n/g, "%0D%0A");
+
+    alert(
+      "Opening Gmail… If nothing happens, check popup settings or set Gmail as default email."
+    );
+
     window.location.href = `mailto:${BRAND.email}?subject=${encodeURIComponent(
       subject
     )}&body=${body}`;
+
+    // Clear cart after
     setCart([]);
     setCartOpen(false);
   };
 
-  // ------------------------------------------------------------------
-  // AGE GATE UI (centered modal instead of full screen)
-  // ------------------------------------------------------------------
-  if (isVerified === false) {
+  //
+  // AGE GATE MODAL (centered card on dark background)
+  //
+  if (!isVerified) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-8">
-        <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl p-6 text-neutral-900">
+        <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl p-6 text-neutral-900 border border-neutral-200">
           <h1 className="text-xl font-bold text-center">
             Age Verification Required
           </h1>
@@ -182,7 +221,7 @@ export default function NexaPeptidesPage() {
               className="px-3 py-2 rounded-xl border border-neutral-300 text-center w-32 text-neutral-900"
             />
             <button
-              onClick={handleSubmit}
+              onClick={handleSubmitAgeGate}
               className="mt-4 w-full rounded-xl bg-neutral-900 text-white text-sm font-semibold py-2 hover:opacity-90 transition"
             >
               Enter Site
@@ -198,12 +237,9 @@ export default function NexaPeptidesPage() {
     );
   }
 
-  // while we haven't read localStorage yet, don't flash the site
-  if (!isVerified) return null;
-
-  // ------------------------------------------------------------------
-  // ACTUAL SITE CONTENT
-  // ------------------------------------------------------------------
+  //
+  // MAIN SITE CONTENT
+  //
   return (
     <div className="min-h-screen bg-white text-neutral-900">
       {/* HEADER */}
@@ -213,13 +249,23 @@ export default function NexaPeptidesPage() {
             <img src={LOGO_SRC} alt="logo" className="h-8 w-8" />
             <span className="font-extrabold text-xl">Nexa Peptides</span>
           </div>
-          <button
-            onClick={() => setCartOpen(true)}
-            className="border border-neutral-900 rounded-full px-4 py-1 text-sm hover:bg-neutral-900 hover:text-white"
-          >
-            <ShoppingCart className="inline h-4 w-4 mr-1" />
-            Cart ({cart.reduce((s, l) => s + l.qty, 0)})
-          </button>
+
+          <div className="flex items-center gap-3">
+            <a
+              href="/ambassadors"
+              className="text-xs font-semibold border border-neutral-900 rounded-full px-3 py-1 hover:bg-neutral-900 hover:text-white"
+            >
+              Ambassadors
+            </a>
+
+            <button
+              onClick={() => setCartOpen(true)}
+              className="border border-neutral-900 rounded-full px-4 py-1 text-sm hover:bg-neutral-900 hover:text-white"
+            >
+              <ShoppingCart className="inline h-4 w-4 mr-1" />
+              Cart ({cart.reduce((s, l) => s + l.qty, 0)})
+            </button>
+          </div>
         </div>
       </header>
 
@@ -279,11 +325,12 @@ export default function NexaPeptidesPage() {
               </button>
 
               <h3 className="text-2xl font-bold mb-4">Your Cart</h3>
+
               {cart.length === 0 ? (
                 <p className="text-neutral-600">Your cart is empty.</p>
               ) : (
                 <>
-                  <ul className="space-y-2 mb-4">
+                  <ul className="space-y-2 mb-4 max-h-40 overflow-y-auto pr-2">
                     {cart.map((item) => {
                       const p = PRODUCTS.find((x) => x.sku === item.sku)!;
                       return (
@@ -304,8 +351,23 @@ export default function NexaPeptidesPage() {
                       );
                     })}
                   </ul>
-                  <div className="text-right font-bold mb-4">
-                    Total: ${total.toFixed(2)}
+
+                  {/* price summary with discount */}
+                  <div className="text-right text-sm mb-4 space-y-1">
+                    <div className="flex justify-between font-medium">
+                      <span>Subtotal:</span>
+                      <span>${subtotal.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-green-600 font-medium">
+                      <span>
+                        Discount {discountCode ? `(10% - ${discountCode})` : "(none)"}
+                      </span>
+                      <span>- ${discountAmount.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between font-bold text-lg">
+                      <span>Total:</span>
+                      <span>${finalTotal.toFixed(2)}</span>
+                    </div>
                   </div>
 
                   <form
@@ -332,6 +394,15 @@ export default function NexaPeptidesPage() {
                       placeholder="Address"
                       required
                     />
+
+                    {/* NEW: Ambassador / referral code input */}
+                    <input
+                      className="border border-neutral-300 rounded-xl px-3 py-2 uppercase"
+                      placeholder="Referral / Discount Code (optional)"
+                      value={discountCode}
+                      onChange={(e) => setDiscountCode(e.target.value)}
+                    />
+
                     <button
                       type="submit"
                       className="bg-neutral-900 text-white rounded-xl py-2 font-semibold hover:opacity-90"
