@@ -1,31 +1,24 @@
 export default function DisclaimerPage() {
   return (
-    <main className="min-h-screen bg-white text-neutral-900 p-8 max-w-3xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">Research Use Disclaimer</h1>
-      <p className="text-sm text-neutral-700 leading-relaxed mb-4">
-        All products offered by NexaPeptides are intended exclusively for
-        laboratory research and in vitro use. They are not approved for human or
-        animal consumption, medical, diagnostic, therapeutic, or cosmetic
-        applications. These compounds have not been evaluated by the U.S. Food
-        and Drug Administration (FDA) for safety or efficacy in any context.
-      </p>
-      <p className="text-sm text-neutral-700 leading-relaxed mb-4">
-        NexaPeptides is not a compounding pharmacy. NexaPeptides is a chemical
-        supplier. NexaPeptides is not a chemical compounding facility as defined
-        under Section 503a of the Federal Food, Drug, and Cosmetic Act nor is
-        NexaPeptides an outsourcing facility as defined under 503b of the Food,
-        Drug, and Cosmetic Act.
-      </p>
-      <p className="text-sm text-neutral-700 leading-relaxed mb-4">
-        Any misuse, unauthorized distribution, or deviation from these terms may
-        violate federal or state laws and is strictly prohibited. NexaPeptides
-        reserves the right to refuse or cancel orders if misuse is suspected.
-      </p>
-      <p className="text-sm text-neutral-700 leading-relaxed">
-        By proceeding with a purchase, you agree to indemnify and hold
-        NexaPeptides harmless from any claims, liabilities, or damages arising
-        from the improper use of our products.
-      </p>
-    </main>
+    <div className="min-h-screen bg-neutral-950 text-neutral-100 px-6 py-16">
+      <div className="max-w-3xl mx-auto">
+        <h1 className="text-4xl font-extrabold mb-6">Disclaimer</h1>
+        <p className="text-neutral-300 mb-4">
+          All products available through Nexa Peptides are intended for laboratory 
+          research purposes only. They are not approved by the FDA for human use, 
+          and should not be used for diagnosis, treatment, or prevention of disease.
+        </p>
+        <p className="text-neutral-300 mb-4">
+          Nexa Peptides does not make any guarantees or claims about the accuracy 
+          or completeness of product descriptions. Research chemicals should only 
+          be handled by trained professionals.
+        </p>
+        <p className="text-neutral-300">
+          By accessing this website and purchasing our products, you agree to 
+          these terms and accept full responsibility for proper use and compliance 
+          with all applicable regulations.
+        </p>
+      </div>
+    </div>
   );
 }
