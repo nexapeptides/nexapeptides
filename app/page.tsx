@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingCart, X } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -15,8 +15,8 @@ const BRAND = {
   location: "Bradenton • Sarasota • Florida",
 };
 
-// Fallback referral codes (can be updated in /admin)
-const DEFAULT_CODES: Record<string, string> = {
+// Registered ambassador codes
+const REFERRAL_CODES: Record<string, string> = {
   KENNY10: "Kenneth Lopez",
   TEST10: "Demo Ambassador",
 };
@@ -33,41 +33,23 @@ const PRODUCTS = [
   { sku: "PT141-10MG", name: "PT-141 10mg", price: 65, desc: "Peptide studied for libido enhancement.", category: "Libido" },
   { sku: "GHKCU-50MG", name: "GHK-Cu 50mg", price: 85, desc: "Copper peptide for skin, hair, and tissue regeneration.", category: "Anti-Aging" },
   { sku: "CIALIS-20MG-50CT", name: "Cialis 20mg (50 ct)", price: 60, desc: "PDE5 inhibitor researched for blood-flow effects.", category: "Libido" },
-  { sku: "BACW-30ML", name: "Bacteriostatic Water 30 ml", price: 1, desc: "Sterile diluent for peptide reconstitution.", category: "Other" },
+  { sku: "BACW-30ML", name: "Bacteriostatic Water 30ml", price: 1, desc: "Sterile diluent for peptide reconstitution.", category: "Other" },
 ];
 
 export default function NexaPeptidesPage() {
   const [cart, setCart] = useState<{ sku: string; qty: number }[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [referral, setReferral] = useState("");
-  const [codes, setCodes] = useState<Record<string, string>>(DEFAULT_CODES);
   const router = useRouter();
-
-  // Load extra ambassador codes from localStorage (synced with /admin)
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem("approvedAmbassadorCodes");
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          const merged = { ...DEFAULT_CODES };
-          parsed.forEach((c) => (merged[c.toUpperCase()] = "Ambassador"));
-          setCodes(merged);
-        }
-      }
-    } catch (err) {
-      console.warn("Could not load local codes:", err);
-    }
-  }, []);
 
   const total = useMemo(() => {
     const subtotal = cart.reduce((sum, item) => {
       const p = PRODUCTS.find((x) => x.sku === item.sku);
       return p ? sum + p.price * item.qty : sum;
     }, 0);
-    const discount = codes[referral.toUpperCase()] ? subtotal * 0.1 : 0;
+    const discount = REFERRAL_CODES[referral.toUpperCase()] ? subtotal * 0.1 : 0;
     return subtotal - discount;
-  }, [cart, referral, codes]);
+  }, [cart, referral]);
 
   const addToCart = (sku: string) =>
     setCart((prev) => {
@@ -102,7 +84,9 @@ export default function NexaPeptidesPage() {
       .join("%0D%0A");
 
     const ref = referral
-      ? `%0D%0AReferral Code: ${referral.toUpperCase()} — ${codes[referral.toUpperCase()] || "Unregistered"}`
+      ? `%0D%0AReferral Code: ${referral.toUpperCase()} — ${
+          REFERRAL_CODES[referral.toUpperCase()] || "Unregistered"
+        }`
       : "";
 
     const body = `Contact Info:%0D%0AName: ${name}%0D%0AEmail: ${email}%0D%0APhone: ${phone}%0D%0AAddress: ${address}%0D%0A%0D%0AItems:%0D%0A${lines}%0D%0A%0D%0ATotal: $${total.toFixed(
@@ -172,8 +156,16 @@ export default function NexaPeptidesPage() {
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
           >
-            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-lg relative">
-              <button onClick={() => setCartOpen(false)} className="absolute right-4 top-4 text-neutral-500 hover:text-black">
+            <motion.div
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-lg relative"
+            >
+              <button
+                onClick={() => setCartOpen(false)}
+                className="absolute right-4 top-4 text-neutral-500 hover:text-black"
+              >
                 <X className="h-5 w-5" />
               </button>
 
@@ -186,9 +178,17 @@ export default function NexaPeptidesPage() {
                     {cart.map((item) => {
                       const p = PRODUCTS.find((x) => x.sku === item.sku)!;
                       return (
-                        <li key={item.sku} className="flex justify-between items-center border-b pb-2">
+                        <li
+                          key={item.sku}
+                          className="flex justify-between items-center border-b pb-2"
+                        >
                           <span>{item.qty}× {p.name}</span>
-                          <button onClick={() => removeFromCart(item.sku)} className="text-xs text-red-500 hover:underline">Remove</button>
+                          <button
+                            onClick={() => removeFromCart(item.sku)}
+                            className="text-xs text-red-500 hover:underline"
+                          >
+                            Remove
+                          </button>
                         </li>
                       );
                     })}
@@ -202,20 +202,25 @@ export default function NexaPeptidesPage() {
                   />
                   {referral && (
                     <p className="text-sm mb-3">
-                      {codes[referral.toUpperCase()]
-                        ? `✅ Code Applied — 10% off credited to ${codes[referral.toUpperCase()]}`
+                      {REFERRAL_CODES[referral.toUpperCase()]
+                        ? `✅ Code Applied — 10% off credited to ${REFERRAL_CODES[referral.toUpperCase()]}`
                         : "❌ Invalid Code"}
                     </p>
                   )}
 
-                  <div className="text-right font-bold mb-4">Total: ${total.toFixed(2)}</div>
+                  <div className="text-right font-bold mb-4">
+                    Total: ${total.toFixed(2)}
+                  </div>
 
                   <form className="grid gap-3 text-sm text-left" onSubmit={handleCheckout}>
                     <input className="border border-neutral-300 rounded-xl px-3 py-2" placeholder="Full Name" required />
                     <input className="border border-neutral-300 rounded-xl px-3 py-2" placeholder="Email" required />
                     <input className="border border-neutral-300 rounded-xl px-3 py-2" placeholder="Phone" required />
                     <input className="border border-neutral-300 rounded-xl px-3 py-2" placeholder="Address" required />
-                    <button type="submit" className="bg-neutral-900 text-white rounded-xl py-2 font-semibold hover:opacity-90">
+                    <button
+                      type="submit"
+                      className="bg-neutral-900 text-white rounded-xl py-2 font-semibold hover:opacity-90"
+                    >
                       Submit Order (Email Invoice)
                     </button>
                   </form>
