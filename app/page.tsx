@@ -319,7 +319,7 @@ export default function NexaPeptidesPage() {
   const [cartOpen, setCartOpen] = useState(false);
   const [referral, setReferral] = useState("");
 
-  const total = useMemo(() => {
+    const total = useMemo(() => {
     const subtotal = cart.reduce((sum, item) => {
       const p = PRODUCTS.find((x) => x.sku === item.sku);
       return p ? sum + p.price * item.qty : sum;
@@ -328,7 +328,15 @@ export default function NexaPeptidesPage() {
     const hasCode = REFERRAL_CODES[referral.toUpperCase()];
     const discount = hasCode ? subtotal * 0.1 : 0;
 
-    return subtotal - discount;
+    // ✅ Shipping rules
+    const shippingThreshold = 300; // Free shipping over this amount
+    const shippingRate = 20;       // Flat $20 shipping
+    const shipping =
+      subtotal - discount >= shippingThreshold || cart.length === 0
+        ? 0
+        : shippingRate;
+
+    return subtotal - discount + shipping;
   }, [cart, referral, REFERRAL_CODES]);
 
   const addToCart = (sku: string) => {
