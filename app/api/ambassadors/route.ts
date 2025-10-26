@@ -1,96 +1,57 @@
 import { NextResponse } from "next/server";
 
-const API_URL = process.env.KV_REST_API_URL!;
-const API_TOKEN = process.env.KV_REST_API_TOKEN!;
-
-/**
- * GET  → fetch all ambassador codes
- * POST → add a new ambassador code
- * DELETE → remove an ambassador code
- */
+export const runtime = "edge"; // run close to user
 
 export async function GET() {
   try {
-    const res = await fetch(`${API_URL}/get/ambassador_codes`, {
-      headers: { Authorization: `Bearer ${API_TOKEN}` },
+    const url = process.env.KV_REST_API_URL;
+    const token = process.env.KV_REST_API_TOKEN;
+
+    // if env vars aren't there in prod, don't crash — just return fallback
+    if (!url || !token) {
+      console.error("⚠ No Upstash creds in env. Using fallback list.");
+
+      const fallback = [
+        { code: "KENNY10", name: "Kenneth Lopez" },
+        { code: "TEST10", name: "Demo Ambassador" },
+        { code: "TITAN", name: "Brady Gryffin" },
+        { code: "SIMON10", name: "Simon Freed" },
+        { code: "LXRRY", name: "Larry Lianito" },
+        { code: "WHEYTOOHOT", name: "Sophia Banik" },
+      ];
+
+      return NextResponse.json(fallback, { status: 200 });
+    }
+
+    // normal path: pull live data from Upstash
+    const res = await fetch(`${url}/hgetall/ambassador_codes`, {
+      headers: { Authorization: `Bearer ${token}` },
+      // make sure we don't cache stale codes
       cache: "no-store",
     });
 
     if (!res.ok) {
-      return NextResponse.json([]);
+      console.error("❌ Upstash fetch failed:", res.status, res.statusText);
+
+      return NextResponse.json(
+        [],
+        {
+          status: 500,
+        }
+      );
     }
 
-    const { result } = await res.json();
-    return NextResponse.json(result ? JSON.parse(result) : []);
+    const data = await res.json(); // { "KENNY10": "Kenneth Lopez", "TITAN": "Brady Gryffin", ... }
+
+    // convert object -> array of {code, name}
+    const formatted = Object.entries(data).map(([code, name]) => ({
+      code,
+      name: String(name),
+    }));
+
+    return NextResponse.json(formatted, { status: 200 });
   } catch (err) {
-    console.error("Failed to load ambassadors:", err);
-    return NextResponse.json([]);
-  }
-}
-
-export async function POST(request: Request) {
-  try {
-    const { code, name } = await request.json();
-
-    // get existing list
-    const res = await fetch(`${API_URL}/get/ambassador_codes`, {
-      headers: { Authorization: `Bearer ${API_TOKEN}` },
-      cache: "no-store",
-    });
-
-    const { result } = res.ok ? await res.json() : { result: "[]" };
-    const list = result ? JSON.parse(result) : [];
-
-    // add new one
-    const updated = [
-      ...list.filter((c: any) => c.code.toUpperCase() !== code.toUpperCase()),
-      { code: code.toUpperCase(), name },
-    ];
-
-    await fetch(`${API_URL}/set/ambassador_codes`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${API_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(updated),
-    });
-
-    return NextResponse.json({ success: true });
-  } catch (err) {
-    console.error("POST error:", err);
-    return NextResponse.json({ success: false });
-  }
-}
-
-export async function DELETE(request: Request) {
-  try {
-    const { code } = await request.json();
-
-    const res = await fetch(`${API_URL}/get/ambassador_codes`, {
-      headers: { Authorization: `Bearer ${API_TOKEN}` },
-      cache: "no-store",
-    });
-
-    const { result } = res.ok ? await res.json() : { result: "[]" };
-    const list = result ? JSON.parse(result) : [];
-
-    const updated = list.filter(
-      (c: any) => c.code.toUpperCase() !== code.toUpperCase()
-    );
-
-    await fetch(`${API_URL}/set/ambassador_codes`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${API_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(updated),
-    });
-
-    return NextResponse.json({ success: true });
-  } catch (err) {
-    console.error("DELETE error:", err);
-    return NextResponse.json({ success: false });
+    console.error("🔥 Error in /api/ambassadors:", err);
+    return NextResponse.json([], { status: 500 });
   }
 }
