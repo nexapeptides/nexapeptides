@@ -16,32 +16,32 @@ const BRAND = {
   location: "Bradenton • Sarasota • Florida",
 };
 
-// pull dynamic referral codes from localStorage (set in /admin)
+/**
+ * pull dynamic referral codes from API instead of localStorage
+ * hits /api/ambassadors, which should return something like:
+ * [
+ *   { "code": "KENNY10", "name": "Kenneth Lopez" },
+ *   { "code": "TEST10", "name": "Demo Ambassador" }
+ * ]
+ */
 function useReferralCodes() {
-  const [codes, setCodes] = useState<Record<string, string>>({
-    KENNY10: "Kenneth Lopez",
-    TEST10: "Demo Ambassador",
-  });
+  const [codes, setCodes] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    // don't run on server
-    if (typeof window === "undefined") return;
-
-    try {
-      const stored = window.localStorage.getItem("approvedAmbassadorCodes");
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          const dynamic: Record<string, string> = {};
-          parsed.forEach((c: string) => {
-            dynamic[c.toUpperCase()] = "Approved Ambassador";
-          });
-          setCodes((prev) => ({ ...prev, ...dynamic }));
-        }
+    async function fetchCodes() {
+      try {
+        const res = await fetch("/api/ambassadors");
+        const data = await res.json();
+        const map: Record<string, string> = {};
+        data.forEach((item: { code: string; name: string }) => {
+          map[item.code.toUpperCase()] = item.name;
+        });
+        setCodes(map);
+      } catch (err) {
+        console.error("Failed to load ambassador codes", err);
       }
-    } catch (err) {
-      console.error("could not load ambassador codes", err);
     }
+    fetchCodes();
   }, []);
 
   return codes;
@@ -319,7 +319,7 @@ export default function NexaPeptidesPage() {
   const [cartOpen, setCartOpen] = useState(false);
   const [referral, setReferral] = useState("");
 
-    const total = useMemo(() => {
+  const total = useMemo(() => {
     const subtotal = cart.reduce((sum, item) => {
       const p = PRODUCTS.find((x) => x.sku === item.sku);
       return p ? sum + p.price * item.qty : sum;
@@ -328,9 +328,9 @@ export default function NexaPeptidesPage() {
     const hasCode = REFERRAL_CODES[referral.toUpperCase()];
     const discount = hasCode ? subtotal * 0.1 : 0;
 
-    // ✅ Shipping rules
+    // shipping rules
     const shippingThreshold = 300; // Free shipping over this amount
-    const shippingRate = 20;       // Flat $20 shipping
+    const shippingRate = 20; // Flat $20 shipping
     const shipping =
       subtotal - discount >= shippingThreshold || cart.length === 0
         ? 0
@@ -575,9 +575,7 @@ export default function NexaPeptidesPage() {
             <div className="font-extrabold text-lg text-neutral-100">
               Nexa Peptides
             </div>
-            <p className="mt-3 text-sm text-neutral-400">
-              {BRAND.tagline}
-            </p>
+            <p className="mt-3 text-sm text-neutral-400">{BRAND.tagline}</p>
           </div>
 
           {/* Contact */}
@@ -594,10 +592,19 @@ export default function NexaPeptidesPage() {
           <div className="text-sm text-neutral-400">
             © {new Date().getFullYear()} Nexa Peptides — For laboratory research only.
             <div className="mt-2 space-x-3">
-              <a href="/terms" className="hover:underline">Terms</a>
-              <a href="/privacy" className="hover:underline">Privacy</a>
-              <a href="/disclaimer" className="hover:underline">Disclaimer</a>
-              <a href="/ambassadors" className="hover:underline text-blue-400">
+              <a href="/terms" className="hover:underline">
+                Terms
+              </a>
+              <a href="/privacy" className="hover:underline">
+                Privacy
+              </a>
+              <a href="/disclaimer" className="hover:underline">
+                Disclaimer
+              </a>
+              <a
+                href="/ambassadors"
+                className="hover:underline text-blue-400"
+              >
                 Become an Ambassador
               </a>
             </div>
